@@ -111,6 +111,7 @@
                 sliding: false,
                 slideOffset: 0,
                 swipeLeft: null,
+                swipeOffset: null,
                 $list: null,
                 touchObject: {},
                 transformsEnabled: false,
@@ -2539,7 +2540,10 @@
 
         var _ = this,
             slideCount,
-            direction;
+            direction,
+            currentSlide,
+            swipeRightOffset,
+            overhang;
 
         _.dragging = false;
         _.interrupted = false;
@@ -2553,7 +2557,24 @@
             _.$slider.trigger('edge', [_, _.swipeDirection() ]);
         }
 
-        if ( _.touchObject.swipeLength >= _.touchObject.minSwipe ) {
+        if (_.swipeLeft !== null) {
+            _.swipeOffset = _.getLeft(_.currentSlide) - _.swipeLeft;
+        } else {
+            _.swipeOffset = 0;
+        }
+
+        currentSlide = _.$slideTrack.children('.slick-slide').eq(_.currentSlide + 1);
+        swipeRightOffset = currentSlide.width() - _.listWidth - _.swipeOffset;
+
+        if(_.swipeOffset <= 0) {
+            overhang = _.swipeOffset;
+        } else if(swipeRightOffset <= 0) {
+            overhang = -swipeRightOffset;
+        } else {
+            overhang = 0;
+        }
+
+        if ( Math.abs(overhang) >= _.touchObject.minSwipe) {
 
             direction = _.swipeDirection();
 
@@ -2598,7 +2619,7 @@
 
         } else {
 
-            if ( _.touchObject.startX !== _.touchObject.curX ) {
+            if ( _.touchObject.startX !== _.touchObject.curX && overhang !== 0 ) {
 
                 _.slideHandler( _.currentSlide );
                 _.touchObject = {};
@@ -2701,7 +2722,7 @@
         }
 
         if (_.options.vertical === false) {
-            _.swipeLeft = curLeft + swipeLength * positionOffset;
+            _.swipeLeft = curLeft - _.swipeOffset + swipeLength * positionOffset;
         } else {
             _.swipeLeft = curLeft + (swipeLength * (_.$list.height() / _.listWidth)) * positionOffset;
         }
@@ -2742,6 +2763,12 @@
         _.touchObject.startY = _.touchObject.curY = touches !== undefined ? touches.pageY : event.clientY;
 
         _.dragging = true;
+
+        if(_.swipeLeft === null) {
+            _.swipeOffset = 0;
+        } else {
+            _.swipeOffset = _.getLeft(_.currentSlide) - _.swipeLeft;
+        }
 
     };
 
